@@ -202,12 +202,93 @@ require("lazy").setup({
     {
         'nvimdev/dashboard-nvim',
         event = 'VimEnter',
+        dependencies = { 'nvim-tree/nvim-web-devicons' },
         config = function()
             require('dashboard').setup {
-                -- config
+                theme = 'hyper',
+                disable_move = true,
+                shortcut_type = 'number',
+                shuffle_letter = false,
+                letter_list = 'abcdefghilmnopqrstuvwxyz',
+                buffer_name = 'Dashboard',
+                change_to_vcs_root = false,
+                config = {
+                    header = {
+                        '█████╗ ██████╗ ███████╗    ██╗   ██╗ ██████╗ ██╗   ██╗    ███████╗ ██████╗ ██████╗ ███████╗██████╗ ██████╗ ',
+                        '██╔══██╗██╔══██╗██╔════╝    ╚██╗ ██╔╝██╔═══██╗██║   ██║    ██╔════╝██╔═══██╗██╔══██╗██╔════╝██╔══██╗╚════██╗',
+                        '███████║██████╔╝█████╗       ╚████╔╝ ██║   ██║██║   ██║    ███████╗██║   ██║██████╔╝█████╗  ██████╔╝  ▄███╔╝',
+                        '██╔══██║██╔══██╗██╔══╝        ╚██╔╝  ██║   ██║██║   ██║    ╚════██║██║   ██║██╔══██╗██╔══╝  ██╔══██╗  ▀▀══╝',
+                        '██║  ██║██║  ██║███████╗       ██║   ╚██████╔╝╚██████╔╝    ███████║╚██████╔╝██████╔╝███████╗██║  ██║  ██╗  ',
+                        '╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝       ╚═╝    ╚═════╝  ╚═════╝     ╚══════╝ ╚═════╝ ╚═════╝ ╚══════╝╚═╝  ╚═╝  ╚═╝',
+                        '                                                                                                ',
+                    },
+                    week_header = {
+                        enable = false,
+                        concat = nil,
+                        append = nil,
+                    },
+                    shortcut = {
+                        {
+                            desc = '󰚰 Update',
+                            action = 'Lazy update',
+                            key = 'u'
+                        },
+                        {
+                            desc = ' Files',
+                            action = 'Telescope find_files',
+                            key = 'f',
+                        },
+                        {
+                            desc = ' Projects',
+                            action = 'Telescope projects',
+                            key = 'p',
+                        },
+                        {
+                            desc = ' Profile',
+                            action = 'Triforce profile',
+                            key = 'l',
+                        },
+                        {
+                            desc = ' Search',
+                            action = 'Telescope live_grep',
+                            key = 's',
+                        },
+                        {
+                            desc = '󰈆 Todo',
+                            action = 'Org agenda a',
+                            key = 't',
+                        },
+                        {
+                            desc = '󰈆 Quit',
+                            action = 'quit',
+                            key = 'q',
+                        },
+                    },
+                    footer = {
+                        '',
+                        '',
+                        '',
+                        'You started a job',
+                        'that you hate when you\'re sober',
+                        'and hate even more when you\'re not',
+                    },
+                },
+                hide = {
+                    statusline = true,
+                    tabline = true,
+                },
+                preview = {
+                    command = '',
+                    file_path = nil,
+                    file_height = 0,
+                    file_width = 0,
+                },
+                directories = {
+                    { key = 'p', path = '~/Projects/' },
+                    { key = 'e', path = '~/.config/nvim' },
+                },
             }
-        end,
-        dependencies = { {'nvim-tree/nvim-web-devicons'}}
+        end
     },
     {
         'ahmedkhalf/project.nvim',
