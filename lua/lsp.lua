@@ -1,3 +1,4 @@
+-- 1. Mason 配置（不变）
 require('mason').setup({
     ui = {
         icons = {
@@ -12,6 +13,7 @@ require('mason-lspconfig').setup({
     ensure_installed = { 'clangd', 'pylsp', 'lua_ls', 'rust_analyzer' },
 })
 
+-- 2. 诊断配置（不变）
 vim.diagnostic.config({
   virtual_text = {
     enabled = true,
@@ -30,24 +32,23 @@ vim.diagnostic.config({
   },
 })
 
-local lspconfig = require('lspconfig')
+-- 3. 基础配置（不变）
 local capabilities = vim.lsp.protocol.make_client_capabilities()
--- 解决 offsetEncoding 兼容问题（clangd 多实例常见诱因）
-capabilities.offsetEncoding = { "utf-8", "utf-16" }
+capabilities.offsetEncoding = { "utf-8", "utf-16" }  -- clangd 兼容
 
--- 全局快捷键
+-- 全局快捷键（不变）
 local opts = { noremap = true, silent = true }
 vim.keymap.set("n", "<space>e", vim.diagnostic.open_float, opts)
 vim.keymap.set("n", "[d", vim.diagnostic.goto_prev, opts)
 vim.keymap.set("n", "]d", vim.diagnostic.goto_next, opts)
 vim.keymap.set("n", "<space>q", vim.diagnostic.setloclist, opts)
 
--- 通用 on_attach 函数
+-- 通用 on_attach 函数（不变）
 local on_attach = function(client, bufnr)
 	vim.api.nvim_buf_set_option(bufnr, "omnifunc", "v:lua.vim.lsp.omnifunc")
 
 	if client.name == "rust_analyzer" then
-		vim.lsp.inlay_hint.enable()
+		vim.lsp.inlay_hint.enable(bufnr, true)  -- 修正：新版需要传 bufnr
 	end
 
 	local bufopts = { noremap = true, silent = true, buffer = bufnr }
@@ -71,78 +72,105 @@ local on_attach = function(client, bufnr)
 	end, bufopts)
 end
 
--- 统一配置：所有 LSP 都继承基础 capabilities 和 on_attach
-local default_lsp_config = {
-    on_attach = on_attach,
+-- 4. 核心修改：定义 LSP 配置模板（替代 lspconfig.xxx.setup）
+local util = require('lspconfig.util')  -- 仅保留 util 工具函数，不用 lspconfig 框架
+
+-- 通用 LSP 启动函数（封装重复逻辑）
+local start_lsp = function(lsp_name, filetypes, custom_config)
+  -- 合并默认配置和自定义配置
+  local config = vim.tbl_deep_extend('force', {
+    name = lsp_name,
     capabilities = capabilities,
-}
+    on_attach = on_attach,
+    root_dir = util.root_pattern('.git'),  -- 默认根目录规则
+  }, custom_config or {})
 
--- 各个 LSP 配置（简化写法，避免重复）
-lspconfig.pylsp.setup(default_lsp_config)
-lspconfig.gopls.setup(default_lsp_config)
-lspconfig.bashls.setup(default_lsp_config)
-lspconfig.rust_analyzer.setup(default_lsp_config)
-lspconfig.ocamllsp.setup(default_lsp_config)
-lspconfig.ruby_lsp.setup(default_lsp_config)
-lspconfig.hls.setup(default_lsp_config)
+  -- 注册 FileType 自动命令，按需启动 LSP
+  vim.api.nvim_create_autocmd('FileType', {
+    pattern = filetypes,
+    callback = function()
+      -- 自动识别根目录（关键：替代 lspconfig 的自动根目录检测）
+      local root_dir = config.root_dir(vim.api.nvim_buf_get_name(0)) or vim.fn.getcwd()
+      config.root_dir = root_dir
 
-lspconfig.lua_ls.setup(vim.tbl_deep_extend('force', default_lsp_config, {
-	settings = {
-		Lua = {
-			runtime = { version = "LuaJIT" },
-			diagnostics = { globals = { "vim" } },
-			workspace = { library = vim.api.nvim_get_runtime_file("", true) },
-			telemetry = { enable = false },
-		},
-	},
-}))
-
--- 关键：clangd 专属配置（解决多实例核心）
-lspconfig.clangd.setup(vim.tbl_deep_extend('force', default_lsp_config, {
-    on_attach = function(client, bufnr)
-        on_attach(client, bufnr)
-        client.server_capabilities.diagnosticProvider = {
-            interFileDependencies = true,
-            workspaceDiagnostics = true
-        }
-        -- 禁用内置格式化（避免和 clangd 自身冲突）
-        client.server_capabilities.documentFormattingProvider = false
+      -- 启动 LSP（官方推荐的新方式，无警告）
+      vim.lsp.start(config)
     end,
-    filetypes = {"c", "cpp", "objc", "objcpp", "cuda"},
-    cmd = {
-        "clangd",
-        "--background-index",
-        "--clang-tidy=false",
-        "--header-insertion=iwyu",
-        "--completion-style=detailed",
-        "--function-arg-placeholders",
-        "--all-scopes-completion",
-        "--pch-storage=memory",
-        "--pretty",
-        -- 强制单实例运行（关键参数）
-        "--limit-references=0",
-        "--limit-workspace-search=0"
+    desc = string.format("Start %s LSP", lsp_name),
+  })
+end
+
+-- 5. 逐个配置 LSP（彻底抛弃 lspconfig.xxx.setup）
+-- 5.1 基础 LSP（pylsp/gopls/bashls/rust_analyzer/ocamllsp/ruby_lsp/hls）
+start_lsp('pylsp', {'python'})
+start_lsp('gopls', {'go', 'gomod', 'gowork', 'gotmpl'})
+start_lsp('bashls', {'sh', 'bash'})
+start_lsp('rust_analyzer', {'rust'}, {
+  settings = {
+    ['rust-analyzer'] = {
+      cargo = { allFeatures = true },
+      checkOnSave = {
+        command = 'clippy',
+      },
     },
-    init_options = {
-        fallbackFlags = { "-std=c++20", "--include-directory=./include" },
-        -- 禁用自动重启
-        cache = { directory = vim.fn.stdpath("cache") .. "/clangd" }
+  },
+})
+start_lsp('ocamllsp', {'ocaml', 'ocaml.interface', 'ocamllex'})
+start_lsp('ruby_lsp', {'ruby'})
+start_lsp('hls', {'haskell', 'lhaskell'})
+
+-- 5.2 lua_ls 自定义配置
+start_lsp('lua_ls', {'lua'}, {
+  cmd = {'lua-language-server'},
+  settings = {
+    Lua = {
+      runtime = { version = "LuaJIT" },
+      diagnostics = { globals = { "vim" } },
+      workspace = { library = vim.api.nvim_get_runtime_file("", true) },
+      telemetry = { enable = false },
     },
-    -- 显式指定根目录识别规则（避免多目录触发多实例）
-    root_dir = lspconfig.util.root_pattern(
-        "compile_commands.json",
-        "compile_flags.txt",
-        ".git",
-        "CMakeLists.txt",
-        "Makefile",
-        ".clangd"
-    ),
-    -- 禁止单文件模式重复启动
-    single_file_support = true,
-    -- 禁用自动重连（避免崩溃后多实例）
-    autostart = true,
-    flags = {
-        debounce_text_changes = 150,
-        allow_incremental_sync = true
+  },
+  root_dir = util.root_pattern('.git', 'lua', '.luarc.json'),
+})
+
+-- 5.3 clangd 专属配置（保留你所有自定义逻辑）
+start_lsp('clangd', {'c', 'cpp', 'objc', 'objcpp', 'cuda'}, {
+  cmd = {
+    "clangd",
+    "--background-index",
+    "--clang-tidy=false",
+    "--header-insertion=iwyu",
+    "--completion-style=detailed",
+    "--function-arg-placeholders",
+    "--all-scopes-completion",
+    "--pch-storage=memory",
+    "--pretty",
+    "--limit-references=0",
+    "--limit-workspace-search=0"
+  },
+  on_attach = function(client, bufnr)
+    on_attach(client, bufnr)
+    client.server_capabilities.diagnosticProvider = {
+      interFileDependencies = true,
+      workspaceDiagnostics = true
     }
-}))
+    client.server_capabilities.documentFormattingProvider = false
+  end,
+  init_options = {
+    fallbackFlags = { "-std=c++20", "--include-directory=./include" },
+    cache = { directory = vim.fn.stdpath("cache") .. "/clangd" }
+  },
+  root_dir = util.root_pattern(
+    "compile_commands.json",
+    "compile_flags.txt",
+    ".git",
+    "CMakeLists.txt",
+    "Makefile",
+    ".clangd"
+  ),
+  single_file_support = true,
+  flags = {
+    debounce_text_changes = 150,
+    allow_incremental_sync = true
+  }
+})

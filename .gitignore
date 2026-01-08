@@ -4,3 +4,4 @@ vim.backup
 lazy-lock.json
 *.bak
 lua/*.bak
+*.bak2
