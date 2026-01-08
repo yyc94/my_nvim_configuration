@@ -1,0 +1,6 @@
+test.lua
+test_ime.lua
+vim.backup
+lazy-lock.json
+*.bak
+lua/*.bak
