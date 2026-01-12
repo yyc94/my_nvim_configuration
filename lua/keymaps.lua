@@ -1,4 +1,3 @@
-require("custom")
 -- define common options
 local opts = {
     noremap = true,      -- non-recursive
@@ -98,11 +97,6 @@ vim.keymap.set('i', '<F10>', 'copilot#Accept("\\<CR>")', {
 })
 vim.g.copilot_no_tab_map = true
 
----------------
--- Checkmate --
----------------
-vim.keymap.set('n', '<Leader>tp', OpenTodoListInFloatWin, { desc = 'Open TODOList' })
-
 -------------
 -- Flowterm --
 -------------
@@ -120,3 +114,13 @@ vim.keymap.set('n', '<Leader>gP',"<cmd>lua require('goto-preview').close_all_win
 vim.keymap.set('n', '<Leader>gr',"<cmd>lua require('goto-preview').goto_preview_references()<CR>", {noremap=true})
 
 vim.keymap.set('n', '<Leader>ee', "<cmd>%s/\\s\\+$//e<CR>", {noremap = true, desc = "clear all blanks at the end of lines"})
+
+vim.api.nvim_create_autocmd("BufWritePre", {
+    pattern = {
+        "*.c", "*.cpp", "*.cc", "*.h", "*.hpp", "*.lua", "*.rs", "Makefile", "makefile"
+    },
+    callback = function()
+        vim.cmd("%s/\\s\\+$//e")
+    end,
+    desc = "Clear all blanks at the end of each line when exit"
+})

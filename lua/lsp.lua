@@ -81,9 +81,12 @@ local start_lsp = function(lsp_name, filetypes, custom_config)
     pattern = filetypes,
     callback = function()
       local root_dir = config.root_dir(vim.api.nvim_buf_get_name(0)) or vim.fn.getcwd()
-      config.root_dir = root_dir
+      local launch_config = vim.tbl_deep_extend('force', {}, config, {
+        root_dir = root_dir
+      })
+      -- config.root_dir = root_dir
 
-      vim.lsp.start(config)
+      vim.lsp.start(launch_config)
     end,
     desc = string.format("Start %s LSP", lsp_name),
   })
