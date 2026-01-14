@@ -593,8 +593,8 @@ require("lazy").setup({
                 cursor_line_only = true,
                 show_on_start = false,
                 language_config = {
-                    cpp = { prefix_string = " ✨ " },
-                    lua = { prefix_string = " ✨ " },
+                    cpp = { prefix_string = " 💫 " },
+                    lua = { prefix_string = " 💫 " },
                 },
             })
         end
