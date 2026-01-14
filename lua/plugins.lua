@@ -504,10 +504,6 @@ require("lazy").setup({
         },
     },
     {
-        'nvim-lualine/lualine.nvim',
-        dependencies = { 'nvim-tree/nvim-web-devicons' }
-    },
-    {
         'nvim-orgmode/orgmode',
         event = 'VeryLazy',
         ft = { 'org' },
@@ -572,5 +568,51 @@ require("lazy").setup({
                 },
             })
         end,
-    }
+    },
+    {
+        "quentingruber/pomodoro.nvim",
+        lazy = true, -- needed so the pomodoro can start at launch
+        opts = {
+            start_at_launch = true,
+            work_duration = 25,
+            break_duration = 5,
+            delay_duration = 1, -- The additionnal work time you get when you delay a break
+            long_break_duration = 15,
+            breaks_before_long = 4,
+            display_ui_on_break = false, -- Disable it if you only want to see the lualine
+        },
+    },
+    {
+        'code-biscuits/nvim-biscuits',
+        dependencies = {
+            'nvim-treesitter/nvim-treesitter',
+        },
+        config = function()
+            require('nvim-biscuits').setup({
+                on_events = { 'InsertLeave', 'CursorHoldI' },
+                cursor_line_only = true,
+                show_on_start = false,
+                language_config = {
+                    cpp = { prefix_string = " ✨ " },
+                    lua = { prefix_string = " ✨ " },
+                },
+            })
+        end
+    },
+    {
+        'nvim-lualine/lualine.nvim',
+        dependencies = { 'nvim-tree/nvim-web-devicons' },
+        -- optional = true,
+        event = "VeryLazy",
+        opts = function(_, opts)
+            opts.sections = opts.sections or {}
+            opts.sections.lualine_x = opts.sections.lualine_x or {}
+            table.insert(opts.sections.lualine_x, 3, {
+                function()
+                    return require("pomodoro").get_pomodoro_status("🍅❌","🍅","☕")
+                end,
+            })
+        end,
+    },
+
 })
