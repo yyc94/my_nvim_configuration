@@ -117,7 +117,7 @@ vim.keymap.set('n', '<Leader>ee', "<cmd>%s/\\s\\+$//e<CR>", {noremap = true, des
 
 vim.api.nvim_create_autocmd("BufWritePre", {
     pattern = {
-        "*.c", "*.cpp", "*.cc", "*.h", "*.hpp", "*.inl", "*.lua", "*.rs", "Makefile", "makefile"
+        "*.c", "*.cpp", "*.cc", "*.h", "*.hpp", "*.inl", "*.lua", "*.rs", "Makefile", "makefile", "*.md"
     },
     callback = function()
         vim.cmd("%s/\\s\\+$//e")
